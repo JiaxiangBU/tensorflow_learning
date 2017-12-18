@@ -1,32 +1,38 @@
 from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
 
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
-
+mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 #input
-x = tf.placeholder(tf.float32, [None, 784])
-W = tf.Variable(tf.zeros([784, 10]))
+x = tf.placeholder("float", shape=[None,784])
+
+#output ,target_label
+y_ = tf.placeholder("float", shape=[None,10])
+
+#predict_label
+
+#params  y=softmax(Wx+b)
+W = tf.Variable(tf.zeros([784,10]))
 b = tf.Variable(tf.zeros([10]))
-#output
-y = tf.nn.softmax(tf.matmul(x, W) + b)
-y_ = tf.placeholder(tf.float32, [None, 10])
-
-#Loss
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
-
-#Optimization
-train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
-
-#train
 sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
 
-for _ in range(1000):
-	batch_xs, batch_ys = mnist.train.next_batch(100)
-  	sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
+#regression_model n*784 * 784*10 + n*10
+y = tf.nn.softmax(tf.matmul(x,W) + b)
 
+#Loss Function
+cross_entropy = -tf.reduce_sum(y_*tf.log(y))
 
-correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+#train
+train_step = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
 
-print(sess.run(accuracy, feed_dict={x: mnist.test.images, y_: mnist.test.labels}))
+for i in range(1000):
+	batch = mnist.train.next_batch(50)
+	#repalce the data and target_label
+	train_step.run(feed_dict={x:batch[0], y_: batch[1]})
+
+#evalue the model
+correct_prediction = tf.equal(tf.argmax(y,1),tf.argmax(y_,1))
+
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+print accuracy.eval(feed_dict={x:mnist.test.images, y_:mnist.test.labels})
+
